@@ -18,3 +18,8 @@ desktop.ini
 
 # Playwright MCP output (traces, screenshots, downloads)
 .playwright-mcp/
+
+# Vendored agent-skill payloads (installed locally via `npx skills add`;
+# skills-lock.json records what they should be). Several MB, not source.
+.agents/
+.claude/skills/

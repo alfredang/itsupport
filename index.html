@@ -3,38 +3,86 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- ============================================================
+     SECURITY HEADERS (meta-equivalents)
+     This page is deliberately airtight: it makes no network requests of
+     any kind, so the policy below denies everything by default and only
+     re-enables the two things an inline single-file page actually needs.
+       default-src 'none'  — deny fetch/XHR/websocket/worker/media/font/frame
+       script-src / style-src 'unsafe-inline' — required: the JS and CSS are
+                             inline in this file; there are no external ones
+       img-src data:       — the select chevron is an inline data: URI
+       form-action 'none'  — the form can never POST anywhere, even if altered
+       base-uri 'none'     — blocks <base> injection re-pointing relative URLs
+     ============================================================ -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; connect-src 'none'">
+<meta name="referrer" content="no-referrer">
+
 <title>UOB · IT Service Desk — Training Demo</title>
-<meta name="description" content="Internal IT Support Service Desk portal — training demo mockup.">
+<meta name="description" content="Internal IT Support Service Desk portal — training demo mockup. Runs entirely offline; nothing is transmitted or stored.">
 <style>
 /* ============================================================
-   DESIGN TOKENS
+   DESIGN TOKENS — green / tech
+   Change tokens, never call sites. Every colour used for text on a
+   surface below is checked against WCAG AA (4.5:1) at body size.
    ============================================================ */
 :root{
-  --blue:#00539B;
-  --blue-dark:#00417A;
-  --blue-tint:#EAF2F9;
-  --gold:#E8A33D;
-  --gold-dark:#C6821C;
-  --gold-tint:#FDF4E5;
-  --ink:#2C3038;
-  --muted:#5A6270;
-  --border:#DBE0E6;
+  /* Brand greens */
+  --green:#047857;          /* primary — 4.9:1 on white  */
+  --green-dark:#03543F;     /* hover / pressed           */
+  --green-bright:#34D399;   /* accent on DARK only       */
+  --green-tint:#E7F6EF;
+  --green-tint-2:#F2FAF6;
+
+  /* Tech accent — dark surfaces only, never small text on white */
+  --cyan:#22D3EE;
+  --cyan-dim:#0E7490;
+
+  /* Dark surfaces (hero, footer, terminal) */
+  --deep:#04211A;
+  --deep-2:#052E24;
+  --deep-line:rgba(52,211,153,.22);
+  --on-deep:#C7E9DC;        /* 9.2:1 on --deep */
+  --on-deep-dim:#8FBFAF;
+
+  /* Neutrals */
+  --ink:#0C1F1A;
+  --muted:#4B5A55;          /* 7.1:1 on white */
+  --border:#D7E5DE;
   --bg:#FFFFFF;
-  --bg-alt:#F6F8FA;
+  --bg-alt:#F2FAF6;
+
+  /* Status */
   --error:#B3261E;
   --error-bg:#FDECEA;
-  --success:#1B6E3C;
-  --success-bg:#E9F6EE;
-  --radius:8px;
-  --shadow:0 1px 3px rgba(0,0,0,.08), 0 6px 16px rgba(0,0,0,.06);
+  --success:#0F6B47;
+  --success-bg:#E9F7F0;
+  --warn:#8A5A00;
+  --warn-bg:#FFF6E5;
+  --warn-line:#E0A93B;
+
+  --radius:12px;
+  --radius-sm:8px;
+  --shadow:0 1px 2px rgba(4,33,26,.06), 0 8px 24px rgba(4,33,26,.07);
+  --shadow-lg:0 24px 60px rgba(4,33,26,.16);
   --nav-h:68px;
-  --font:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+
+  /* Typography — no external requests, so these are stacks, not webfonts.
+     The first names are picked up when installed locally; the fallbacks
+     (Corbel / Avenir Next) still read distinctly different from the
+     previous Segoe-UI-first stack on every major platform. */
+  --font:"Space Grotesk","Inter","Segoe UI Variable Text",Corbel,"Avenir Next","Segoe UI",system-ui,-apple-system,sans-serif;
+  --font-mono:ui-monospace,"JetBrains Mono","Cascadia Code","SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
 }
 
 /* ============================================================
    BASE / RESET
    ============================================================ */
 *,*::before,*::after{box-sizing:border-box}
+/* Class rules such as .warn{display:flex} out-specify the UA [hidden] rule,
+   which would leave JS-toggled panels permanently visible. This wins. */
+[hidden]{display:none !important}
 html{scroll-behavior:smooth;scroll-padding-top:calc(var(--nav-h) + 16px);-webkit-text-size-adjust:100%}
 body{
   margin:0;
@@ -43,16 +91,23 @@ body{
   line-height:1.6;
   color:var(--ink);
   background:var(--bg);
+  overflow-x:hidden;
 }
-h1,h2,h3,h4{line-height:1.25;margin:0 0 .5em;color:var(--ink)}
-h1{font-size:clamp(1.9rem,4.2vw,2.75rem);letter-spacing:-.02em}
-h2{font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-.01em}
+h1,h2,h3,h4{line-height:1.2;margin:0 0 .5em;color:var(--ink);letter-spacing:-.02em}
+h1{font-size:clamp(2rem,4.6vw,3.1rem)}
+h2{font-size:clamp(1.55rem,3vw,2.15rem)}
 h3{font-size:1.0625rem}
 p{margin:0 0 1rem}
-a{color:var(--blue);text-decoration:underline;text-underline-offset:2px}
-a:hover{color:var(--blue-dark)}
+a{color:var(--green);text-decoration:underline;text-underline-offset:3px}
+a:hover{color:var(--green-dark)}
 img,svg{max-width:100%}
 ul{margin:0;padding:0;list-style:none}
+code{
+  font-family:var(--font-mono);font-size:.88em;
+  background:var(--green-tint);color:var(--green-dark);
+  padding:1px 5px;border-radius:4px;
+}
+::selection{background:var(--green-bright);color:var(--deep)}
 
 /* Accessible focus ring — never removed, only restyled. */
 a:focus-visible,
@@ -60,76 +115,133 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
-summary:focus-visible,
 [tabindex]:focus-visible{
-  outline:3px solid var(--gold-dark);
+  outline:3px solid var(--green);
   outline-offset:2px;
-  border-radius:4px;
+  border-radius:6px;
 }
-.on-blue a:focus-visible,.on-blue button:focus-visible{outline-color:var(--gold)}
+.on-deep a:focus-visible,.on-deep button:focus-visible{outline-color:var(--green-bright)}
 
-.container{max-width:1120px;margin-inline:auto;padding-inline:24px}
-.section{padding:72px 0}
+.container{max-width:1140px;margin-inline:auto;padding-inline:24px}
+.section{padding:80px 0}
 .section--alt{background:var(--bg-alt);border-block:1px solid var(--border)}
-.section__intro{max-width:62ch;color:var(--muted);margin-bottom:36px}
+.section__intro{max-width:62ch;color:var(--muted);margin-bottom:36px;font-size:1.02rem}
 .eyebrow{
-  display:inline-block;font-size:.75rem;font-weight:700;letter-spacing:.12em;
-  text-transform:uppercase;color:var(--blue);margin-bottom:8px;
+  display:inline-flex;align-items:center;gap:9px;
+  font-family:var(--font-mono);font-size:.75rem;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--green);margin-bottom:10px;
+}
+.eyebrow::before{
+  content:"";width:22px;height:2px;background:currentColor;border-radius:2px;
+}
+.on-deep .eyebrow{color:var(--green-bright)}
+.visually-hidden{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0;
 }
 .skip-link{
   position:absolute;left:-9999px;top:0;z-index:100;
-  background:var(--blue);color:#fff;padding:12px 20px;text-decoration:none;font-weight:600;
+  background:var(--green);color:#fff;padding:12px 20px;text-decoration:none;font-weight:600;
 }
 .skip-link:focus{left:8px;top:8px}
+
+/* ============================================================
+   MOTION — techy effects
+   Every animation here is decorative and is switched off wholesale by
+   the prefers-reduced-motion block at the end of this stylesheet.
+   ============================================================ */
+@keyframes gridPan{to{background-position:48px 48px}}
+@keyframes scanSweep{
+  0%{transform:translateY(-40%);opacity:0}
+  12%{opacity:1}
+  88%{opacity:1}
+  100%{transform:translateY(560%);opacity:0}
+}
+@keyframes pulseDot{
+  0%{box-shadow:0 0 0 0 rgba(52,211,153,.55)}
+  70%{box-shadow:0 0 0 9px rgba(52,211,153,0)}
+  100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}
+}
+@keyframes caretBlink{0%,45%{opacity:1}55%,100%{opacity:0}}
+@keyframes lineIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes panelDrop{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+@keyframes sheen{from{transform:translateX(-120%)}to{transform:translateX(220%)}}
+
+/* Scroll reveal — JS adds .is-in; without JS everything stays visible. */
+.reveal{opacity:0;transform:translateY(20px);transition:opacity .55s cubic-bezier(.2,.7,.3,1),transform .55s cubic-bezier(.2,.7,.3,1)}
+.reveal.is-in{opacity:1;transform:none}
 
 /* ============================================================
    BUTTONS
    ============================================================ */
 .btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  padding:13px 26px;border-radius:var(--radius);border:2px solid transparent;
-  font:inherit;font-weight:600;font-size:1rem;line-height:1.2;
-  cursor:pointer;text-decoration:none;transition:background-color .18s, color .18s, border-color .18s;
+  position:relative;overflow:hidden;
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  padding:14px 26px;border-radius:var(--radius-sm);border:2px solid transparent;
+  font:inherit;font-weight:600;font-size:1rem;line-height:1.2;letter-spacing:.01em;
+  cursor:pointer;text-decoration:none;
+  transition:background-color .18s,color .18s,border-color .18s,transform .18s,box-shadow .18s;
 }
-.btn--primary{background:var(--gold);color:#241A08;border-color:var(--gold)}
-.btn--primary:hover{background:var(--gold-dark);border-color:var(--gold-dark);color:#fff}
-.btn--ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.75)}
-.btn--ghost:hover{background:rgba(255,255,255,.14);color:#fff;border-color:#fff}
-.btn--blue{background:var(--blue);color:#fff;border-color:var(--blue)}
-.btn--blue:hover{background:var(--blue-dark);border-color:var(--blue-dark);color:#fff}
-.btn--outline{background:#fff;color:var(--blue);border-color:var(--blue)}
-.btn--outline:hover{background:var(--blue-tint);color:var(--blue-dark)}
+.btn:hover{transform:translateY(-2px)}
+.btn:active{transform:translateY(0)}
+/* Light sweep across the primary CTA on hover — pure decoration. */
+.btn--primary::after{
+  content:"";position:absolute;top:0;left:0;width:35%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.32),transparent);
+  transform:translateX(-120%);
+}
+.btn--primary:hover::after{animation:sheen .75s ease-out}
+.btn--primary{background:var(--green-bright);color:#04231C;border-color:var(--green-bright);box-shadow:0 6px 18px rgba(52,211,153,.28)}
+.btn--primary:hover{background:#6EE7B7;border-color:#6EE7B7;color:#04231C}
+.btn--ghost{background:transparent;color:#fff;border-color:rgba(199,233,220,.5)}
+.btn--ghost:hover{background:rgba(52,211,153,.14);color:#fff;border-color:var(--green-bright)}
+.btn--green{background:var(--green);color:#fff;border-color:var(--green);box-shadow:0 6px 18px rgba(4,120,87,.24)}
+.btn--green:hover{background:var(--green-dark);border-color:var(--green-dark);color:#fff}
+.btn--outline{background:#fff;color:var(--green);border-color:var(--green)}
+.btn--outline:hover{background:var(--green-tint);color:var(--green-dark)}
 
 /* ============================================================
    SECTION 1a — STICKY HEADER / NAV
    ============================================================ */
 .site-header{
   position:sticky;top:0;z-index:50;
-  background:#fff;border-bottom:1px solid var(--border);
+  background:rgba(255,255,255,.86);
+  backdrop-filter:saturate(160%) blur(10px);
+  border-bottom:1px solid var(--border);
 }
-.nav{
-  display:flex;align-items:center;justify-content:space-between;
-  min-height:var(--nav-h);gap:16px;
-}
+.nav{display:flex;align-items:center;justify-content:space-between;min-height:var(--nav-h);gap:16px}
 .brand{
-  font-size:1.0625rem;font-weight:700;color:var(--blue);
-  text-decoration:none;letter-spacing:-.01em;white-space:nowrap;
+  display:inline-flex;align-items:center;gap:10px;
+  font-size:1.0625rem;font-weight:700;color:var(--ink);
+  text-decoration:none;letter-spacing:-.02em;white-space:nowrap;
 }
-.brand:hover{color:var(--blue-dark)}
-.brand .brand__mark{color:var(--gold-dark)}
-.nav__menu{display:flex;align-items:center;gap:4px}
+.brand:hover{color:var(--green-dark)}
+.brand__logo{
+  display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:9px;
+  background:linear-gradient(140deg,var(--green),#0EA271 60%,var(--cyan-dim));
+  color:#fff;box-shadow:0 4px 12px rgba(4,120,87,.28);
+}
+.brand__mark{font-family:var(--font-mono);color:var(--green);font-weight:600}
+.nav__menu{display:flex;align-items:center;gap:2px}
 .nav__menu a{
-  display:block;padding:10px 14px;border-radius:6px;
+  position:relative;display:block;padding:10px 14px;border-radius:8px;
   color:var(--ink);text-decoration:none;font-weight:500;font-size:.95rem;
   transition:background-color .15s,color .15s;
 }
-.nav__menu a:hover{background:var(--blue-tint);color:var(--blue-dark)}
+.nav__menu a::after{
+  content:"";position:absolute;left:14px;right:14px;bottom:5px;height:2px;
+  background:var(--green-bright);border-radius:2px;
+  transform:scaleX(0);transform-origin:left;transition:transform .22s ease;
+}
+.nav__menu a:hover{background:var(--green-tint-2);color:var(--green-dark)}
+.nav__menu a:hover::after{transform:scaleX(1)}
 .nav__toggle{
   display:none;align-items:center;justify-content:center;gap:8px;
-  background:#fff;border:1px solid var(--border);border-radius:6px;
+  background:#fff;border:1px solid var(--border);border-radius:8px;
   padding:9px 12px;font:inherit;font-size:.9rem;font-weight:600;color:var(--ink);cursor:pointer;
 }
-.nav__toggle:hover{background:var(--bg-alt)}
+.nav__toggle:hover{background:var(--bg-alt);border-color:var(--green)}
 .nav__toggle .bars{display:block;width:18px;height:2px;background:var(--ink);position:relative}
 .nav__toggle .bars::before,.nav__toggle .bars::after{
   content:"";position:absolute;left:0;width:18px;height:2px;background:var(--ink);
@@ -137,198 +249,377 @@ summary:focus-visible,
 .nav__toggle .bars::before{top:-6px}
 .nav__toggle .bars::after{top:6px}
 
-/* ============================================================
-   SECTION 1b — HERO + QUICK-INFO CARDS
-   ============================================================ */
-.hero{background:var(--blue);color:#fff;padding:80px 0 88px}
-.hero h1{color:#fff;max-width:16ch}
-.hero__sub{font-size:1.125rem;color:#D6E5F2;max-width:60ch;margin-bottom:28px}
-.hero__actions{display:flex;flex-wrap:wrap;gap:14px}
+/* Live status pill */
+.status-pill{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--font-mono);font-size:.72rem;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--green-dark);
+  background:var(--green-tint);border:1px solid #B7E3CF;border-radius:999px;padding:6px 13px;
+}
+.dot{width:8px;height:8px;border-radius:50%;background:#10B981;flex:none;animation:pulseDot 2.4s ease-out infinite}
+.on-deep .status-pill{color:var(--green-bright);background:rgba(52,211,153,.10);border-color:var(--deep-line)}
 
-.quick{margin-top:-44px;position:relative;z-index:1;padding-bottom:72px}
+/* ============================================================
+   SECTION 1b — HERO (animated tech backdrop)
+   ============================================================ */
+.hero{
+  position:relative;isolation:isolate;overflow:hidden;
+  color:#fff;padding:92px 0 104px;
+  background:
+    radial-gradient(1100px 520px at 12% -15%, rgba(16,185,129,.30), transparent 62%),
+    radial-gradient(900px 420px at 92% 0%, rgba(34,211,238,.16), transparent 60%),
+    linear-gradient(180deg,var(--deep-2),var(--deep));
+}
+/* Layer 1 — the drifting circuit grid */
+.hero__grid{
+  position:absolute;inset:-48px;z-index:-2;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(52,211,153,.10) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(52,211,153,.10) 1px,transparent 1px);
+  background-size:48px 48px;
+  animation:gridPan 20s linear infinite;
+  -webkit-mask-image:radial-gradient(120% 90% at 30% 0%,#000 30%,transparent 78%);
+  mask-image:radial-gradient(120% 90% at 30% 0%,#000 30%,transparent 78%);
+}
+/* Layer 2 — the scanning sweep */
+.hero__scan{
+  position:absolute;left:0;right:0;top:-30%;height:30%;z-index:-1;pointer-events:none;
+  background:linear-gradient(180deg,transparent,rgba(52,211,153,.13) 45%,rgba(34,211,238,.10) 55%,transparent);
+  animation:scanSweep 9s cubic-bezier(.4,0,.5,1) infinite;
+}
+.hero__inner{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
+.hero h1{color:#fff;max-width:15ch}
+.hero h1 .accent{
+  background:linear-gradient(96deg,var(--green-bright),var(--cyan));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.hero__sub{font-size:1.14rem;color:var(--on-deep);max-width:56ch;margin:0 0 30px}
+.hero__actions{display:flex;flex-wrap:wrap;gap:14px}
+.hero__meta{
+  display:flex;flex-wrap:wrap;gap:10px 26px;margin-top:30px;padding-top:24px;
+  border-top:1px solid var(--deep-line);
+  font-family:var(--font-mono);font-size:.78rem;letter-spacing:.06em;color:var(--on-deep-dim);
+}
+.hero__meta b{color:var(--green-bright);font-weight:600}
+
+/* Terminal card — the "techy" centrepiece */
+.term{
+  border-radius:14px;border:1px solid var(--deep-line);
+  background:linear-gradient(180deg,rgba(6,48,38,.92),rgba(4,33,26,.92));
+  box-shadow:var(--shadow-lg);overflow:hidden;animation:floatY 7s ease-in-out infinite;
+}
+.term__bar{
+  display:flex;align-items:center;gap:8px;padding:11px 14px;
+  background:rgba(52,211,153,.07);border-bottom:1px solid var(--deep-line);
+}
+.term__dots{display:flex;gap:6px}
+.term__dots i{width:10px;height:10px;border-radius:50%;background:#1E5E4B;display:block}
+.term__dots i:first-child{background:#2FA37D}
+.term__title{
+  font-family:var(--font-mono);font-size:.74rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--on-deep-dim);margin-left:6px;
+}
+.term__body{padding:18px 18px 22px;font-family:var(--font-mono);font-size:.83rem;line-height:1.95;color:var(--on-deep)}
+.term__body > span{display:block;opacity:0;animation:lineIn .45s ease-out forwards}
+.term__body > span:nth-child(1){animation-delay:.25s}
+.term__body > span:nth-child(2){animation-delay:.75s}
+.term__body > span:nth-child(3){animation-delay:1.25s}
+.term__body > span:nth-child(4){animation-delay:1.75s}
+.term__body > span:nth-child(5){animation-delay:2.25s}
+.term__body > span:nth-child(6){animation-delay:2.75s}
+.term__prompt{color:var(--cyan)}
+.term__ok{color:var(--green-bright)}
+.term__dim{color:var(--on-deep-dim)}
+.caret{
+  display:inline-block;width:8px;height:1em;vertical-align:-2px;margin-left:3px;
+  background:var(--green-bright);animation:caretBlink 1.1s steps(1) infinite;
+}
+
+/* Quick-info cards, lifted over the hero */
+.quick{margin-top:-58px;position:relative;z-index:1;padding-bottom:80px}
 .quick__grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
 .card{
+  position:relative;overflow:hidden;
   background:#fff;border:1px solid var(--border);border-radius:var(--radius);
-  box-shadow:var(--shadow);padding:24px;
+  box-shadow:var(--shadow);padding:26px;
+  transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;
 }
-.quick .card{border-top:4px solid var(--gold)}
-.quick .card h2{font-size:.8125rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
-.quick__value{font-size:1.5rem;font-weight:700;color:var(--blue);margin:0 0 4px;letter-spacing:-.01em}
+.card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:#B7E3CF}
+.quick .card::before{
+  content:"";position:absolute;inset:0 0 auto 0;height:3px;
+  background:linear-gradient(90deg,var(--green),var(--green-bright),var(--cyan));
+}
+.card__icon{
+  display:grid;place-items:center;width:40px;height:40px;border-radius:10px;
+  background:var(--green-tint);color:var(--green);margin-bottom:14px;
+}
+.quick .card h2{
+  font-family:var(--font-mono);font-size:.72rem;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:6px;
+}
+.quick__value{font-size:1.5rem;font-weight:700;color:var(--ink);margin:0 0 4px;letter-spacing:-.02em}
 .quick__note{font-size:.875rem;color:var(--muted);margin:0}
+
+/* ============================================================
+   SECTION 1c — SECURITY CONTROLS BAND
+   ============================================================ */
+.sec-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.sec-card{
+  background:#fff;border:1px solid var(--border);border-left:3px solid var(--green);
+  border-radius:var(--radius);padding:22px;
+  transition:transform .25s ease,box-shadow .25s ease;
+}
+.sec-card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+.sec-card h3{font-size:1rem;margin-bottom:6px}
+.sec-card p{font-size:.9rem;color:var(--muted);margin:0}
+.sec-card .card__icon{background:var(--green-tint);color:var(--green-dark)}
 
 /* ============================================================
    SECTION 2 — TICKET FORM
    ============================================================ */
-.form-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:32px}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px 24px}
+.form-card{
+  position:relative;background:#fff;border:1px solid var(--border);
+  border-radius:var(--radius);box-shadow:var(--shadow);padding:34px;
+}
+.form-card::before{
+  content:"";position:absolute;inset:0 0 auto 0;height:3px;border-radius:var(--radius) var(--radius) 0 0;
+  background:linear-gradient(90deg,var(--green),var(--green-bright),var(--cyan));
+}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px 24px;margin-bottom:22px}
 .field{margin-bottom:22px}
 .grid-2 .field{margin-bottom:0}
-.field > label,.legend-text{display:block;font-weight:600;font-size:.9375rem;margin-bottom:6px}
+.field > label,.legend-text{display:block;font-weight:600;font-size:.9375rem;margin-bottom:7px}
 .req{color:var(--error);font-weight:700}
+.optional{color:var(--muted);font-weight:500}
 .hint{display:block;font-size:.8125rem;color:var(--muted);margin-top:6px}
 .control{
-  width:100%;padding:11px 13px;font:inherit;font-size:1rem;color:var(--ink);
-  background:#fff;border:1px solid #AEB6C0;border-radius:6px;
-  transition:border-color .15s, box-shadow .15s;
+  width:100%;padding:12px 14px;font:inherit;font-size:1rem;color:var(--ink);
+  background:#fff;border:1px solid #A9B8B2;border-radius:var(--radius-sm);
+  transition:border-color .15s,box-shadow .15s,background-color .15s;
 }
-.control:hover{border-color:#8A94A1}
-.control:focus{border-color:var(--blue)}
-textarea.control{min-height:140px;resize:vertical}
+.control:hover{border-color:#7F918B}
+.control:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(4,120,87,.14)}
+textarea.control{min-height:150px;resize:vertical}
 select.control{
   appearance:none;
-  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%232C3038' d='M1.4 0 6 4.6 10.6 0 12 1.4 6 7.4 0 1.4z'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 13px center;padding-right:38px;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%230C1F1A' d='M1.4 0 6 4.6 10.6 0 12 1.4 6 7.4 0 1.4z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;padding-right:38px;
 }
 .control[aria-invalid="true"]{border-color:var(--error);background:var(--error-bg)}
-.error{
-  display:block;color:var(--error);font-size:.8125rem;font-weight:600;margin:6px 0 0;
-}
+.control[aria-invalid="true"]:focus{box-shadow:0 0 0 3px rgba(179,38,30,.16)}
+.error{display:block;color:var(--error);font-size:.8125rem;font-weight:600;margin:7px 0 0}
 .error:empty{display:none}
 
-.counter{float:right;font-size:.8125rem;color:var(--muted);font-weight:500}
+.counter{float:right;font-family:var(--font-mono);font-size:.78rem;color:var(--muted);font-weight:500}
 .counter.is-max{color:var(--error);font-weight:700}
 
 fieldset{border:0;margin:0 0 22px;padding:0}
 legend{padding:0}
-.radio-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
+.radio-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
 .radio{
   display:flex;align-items:center;gap:9px;
-  border:1px solid #AEB6C0;border-radius:6px;padding:10px 16px;cursor:pointer;
-  font-weight:500;background:#fff;transition:border-color .15s,background-color .15s;
+  border:1px solid #A9B8B2;border-radius:var(--radius-sm);padding:11px 17px;cursor:pointer;
+  font-weight:500;background:#fff;transition:border-color .15s,background-color .15s,transform .15s;
 }
-.radio:hover{border-color:var(--blue);background:var(--blue-tint)}
-.radio input{width:18px;height:18px;margin:0;accent-color:var(--blue);cursor:pointer}
-.radio:has(input:checked){border-color:var(--blue);background:var(--blue-tint);box-shadow:inset 0 0 0 1px var(--blue)}
+.radio:hover{border-color:var(--green);background:var(--green-tint-2);transform:translateY(-1px)}
+.radio input{width:18px;height:18px;margin:0;accent-color:var(--green);cursor:pointer}
+.radio:has(input:checked){border-color:var(--green);background:var(--green-tint);box-shadow:inset 0 0 0 1px var(--green)}
 
 .note{
-  display:flex;gap:10px;align-items:flex-start;
-  margin-top:12px;padding:12px 14px;border-radius:6px;
+  display:flex;gap:11px;align-items:flex-start;
+  margin-top:14px;padding:13px 15px;border-radius:var(--radius-sm);
   background:var(--bg-alt);border:1px solid var(--border);border-left:4px solid var(--muted);
   font-size:.875rem;color:var(--muted);
 }
-.note.is-active{background:var(--gold-tint);border-color:var(--gold);border-left-color:var(--gold-dark);color:#5C420F;font-weight:500}
+.note.is-active{background:var(--warn-bg);border-color:var(--warn-line);border-left-color:var(--warn);color:var(--warn);font-weight:500}
 .note p{margin:0}
+.note svg{flex:none;margin-top:2px}
 
 .check{display:flex;gap:11px;align-items:flex-start}
-.check input{width:19px;height:19px;margin:2px 0 0;flex:none;accent-color:var(--blue);cursor:pointer}
+.check input{width:19px;height:19px;margin:2px 0 0;flex:none;accent-color:var(--green);cursor:pointer}
 .check label{font-weight:500;font-size:.9375rem}
 
 .file-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
 .file-btn{
-  display:inline-flex;align-items:center;padding:10px 18px;border-radius:6px;
-  border:1px solid var(--blue);background:#fff;color:var(--blue);
-  font-weight:600;font-size:.9375rem;cursor:pointer;
-}
-.file-btn:hover{background:var(--blue-tint)}
-input[type="file"].visually-hidden{
-  position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
-  clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0;
-}
-input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid var(--gold-dark);outline-offset:2px}
-.file-name{font-size:.9rem;color:var(--muted)}
-.file-name strong{color:var(--ink)}
+  display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border-radius:var(--radius-sm);
+  border:1px solid var(--green);background:#fff;color:var(--green);
+  font-weight:600;font-size:.9375rem;cursor:pointer;transition:background-color .15s}
+.file-btn:hover{background:var(--green-tint)}
+input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid var(--green);outline-offset:2px}
+.file-name{font-size:.9rem;color:var(--muted);word-break:break-all}
+.file-name strong{color:var(--ink);font-family:var(--font-mono);font-size:.85rem}
 
 /* Credential warning */
 .warn{
   display:flex;gap:11px;align-items:flex-start;
-  margin:0 0 14px;padding:14px 16px;border-radius:6px;
-  background:var(--gold-tint);border:1px solid var(--gold);border-left:4px solid var(--gold-dark);
-  color:#5C420F;font-size:.9rem;font-weight:500;
+  margin:0 0 16px;padding:15px 17px;border-radius:var(--radius-sm);
+  background:var(--warn-bg);border:1px solid var(--warn-line);border-left:4px solid var(--warn);
+  color:var(--warn);font-size:.9rem;font-weight:500;
 }
-.warn strong{display:block;color:#4A3509}
+.warn strong{display:block;color:#6B4400}
 .warn p{margin:0}
+.warn svg{flex:none;margin-top:2px}
 
 .privacy-strip{
-  display:flex;gap:11px;align-items:flex-start;
-  background:var(--blue-tint);border:1px solid #BBD4E8;border-radius:var(--radius);
-  padding:16px 18px;margin-bottom:28px;font-size:.9rem;color:#144469;
+  display:flex;gap:12px;align-items:flex-start;
+  background:linear-gradient(120deg,var(--green-tint),var(--green-tint-2));
+  border:1px solid #B7E3CF;border-left:4px solid var(--green);
+  border-radius:var(--radius);padding:17px 19px;margin-bottom:28px;
+  font-size:.9rem;color:#0A3D2C;
 }
 .privacy-strip p{margin:0}
+.privacy-strip svg{flex:none;margin-top:2px;color:var(--green)}
 
-.form-actions{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin-top:28px;padding-top:24px;border-top:1px solid var(--border)}
+.form-actions{
+  display:flex;flex-wrap:wrap;align-items:center;gap:16px;
+  margin-top:28px;padding-top:24px;border-top:1px solid var(--border);
+}
 .form-error-summary{color:var(--error);font-size:.9rem;font-weight:600;margin:0}
 
 /* Success panel */
 .success{
+  position:relative;overflow:hidden;
   background:var(--success-bg);border:1px solid #A9D8BC;border-left:5px solid var(--success);
-  border-radius:var(--radius);padding:32px;box-shadow:var(--shadow);
+  border-radius:var(--radius);padding:34px;box-shadow:var(--shadow);
+  animation:panelDrop .4s ease-out;
 }
-.success h3{color:var(--success);font-size:1.375rem;margin-bottom:8px}
-.success h3:focus-visible{outline:3px solid var(--gold-dark);outline-offset:4px}
+.success h3{color:var(--success);font-size:1.4rem;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.success h3:focus-visible{outline:3px solid var(--green);outline-offset:4px}
 .success__ref{
-  display:inline-block;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-  font-size:1.25rem;font-weight:700;color:var(--ink);letter-spacing:.02em;
-  background:#fff;border:1px dashed var(--success);border-radius:6px;padding:10px 16px;margin-bottom:18px;
+  display:inline-block;font-family:var(--font-mono);
+  font-size:1.2rem;font-weight:700;color:var(--ink);letter-spacing:.03em;
+  background:#fff;border:1px dashed var(--success);border-radius:var(--radius-sm);
+  padding:11px 17px;margin-bottom:18px;
 }
 .success__meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:0 0 20px;padding:0}
-.success__meta div{background:#fff;border:1px solid #C8E3D3;border-radius:6px;padding:14px 16px}
-.success__meta dt{font-size:.75rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
-.success__meta dd{margin:4px 0 0;font-size:1.05rem;font-weight:600;color:var(--ink)}
+.success__meta div{background:#fff;border:1px solid #C8E3D3;border-radius:var(--radius-sm);padding:14px 16px}
+.success__meta dt{font-family:var(--font-mono);font-size:.7rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--muted)}
+.success__meta dd{margin:5px 0 0;font-size:1.05rem;font-weight:600;color:var(--ink)}
 
 /* ============================================================
-   SECTION 3 — FAQ
+   SECTION 3 — FAQ ACCORDION
    ============================================================ */
-.faq__search{position:relative;max-width:520px;margin-bottom:28px}
-.faq__list{border-top:1px solid var(--border)}
-.faq__item{border-bottom:1px solid var(--border);background:#fff}
+.faq__search{position:relative;max-width:540px;margin-bottom:30px}
+.faq__list{
+  border:1px solid var(--border);border-radius:var(--radius);
+  background:#fff;overflow:hidden;box-shadow:var(--shadow);
+}
+.faq__item{border-bottom:1px solid var(--border)}
+.faq__item:last-child{border-bottom:0}
 .faq__q{margin:0}
 .faq__btn{
-  display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;
-  padding:20px 4px;background:none;border:0;text-align:left;
-  font:inherit;font-size:1.0625rem;font-weight:600;color:var(--ink);cursor:pointer;
+  display:flex;align-items:center;gap:14px;width:100%;
+  padding:20px 22px;background:none;border:0;text-align:left;
+  font:inherit;font-size:1.03rem;font-weight:600;color:var(--ink);cursor:pointer;
+  transition:background-color .18s,color .18s;
 }
-.faq__btn:hover{color:var(--blue)}
-.faq__btn[aria-expanded="true"]{color:var(--blue)}
-.chev{flex:none;transition:transform .25s ease;color:var(--blue)}
+.faq__btn:hover{background:var(--green-tint-2);color:var(--green-dark)}
+.faq__btn[aria-expanded="true"]{color:var(--green-dark);background:var(--green-tint-2)}
+.faq__num{
+  font-family:var(--font-mono);font-size:.78rem;font-weight:600;color:var(--green);
+  flex:none;min-width:2.2ch;
+}
+.faq__text{flex:1}
+.chev{
+  flex:none;color:var(--green);
+  transition:transform .3s cubic-bezier(.34,1.4,.5,1);
+}
 .faq__btn[aria-expanded="true"] .chev{transform:rotate(180deg)}
-.faq__panel{padding:0 4px 22px;max-width:78ch;color:var(--muted)}
+.faq__panel{
+  padding:0 22px 24px 58px;max-width:80ch;color:var(--muted);
+  animation:panelDrop .28s ease-out;
+}
 .faq__panel p{margin:0}
-.faq__empty{padding:32px 4px;color:var(--muted);font-style:italic}
+.faq__empty{padding:30px 4px;color:var(--muted);font-style:italic}
 
 /* ============================================================
    FOOTER
    ============================================================ */
-.site-footer{background:var(--blue);color:#D6E5F2;padding:56px 0 0;margin-top:0}
-.site-footer h2{color:#fff;font-size:.8125rem;letter-spacing:.11em;text-transform:uppercase;margin-bottom:14px}
-.footer__grid{display:grid;grid-template-columns:1fr 1fr 1.3fr;gap:40px}
-.site-footer a{color:#fff;text-decoration:none}
-.site-footer a:hover{text-decoration:underline;color:var(--gold)}
-.site-footer li{margin-bottom:9px}
-.site-footer p{font-size:.9rem;line-height:1.65}
-.footer__disclaimer{border-left:3px solid var(--gold);padding-left:14px}
+.site-footer{
+  position:relative;overflow:hidden;color:var(--on-deep);padding:72px 0 0;
+  background:
+    radial-gradient(900px 380px at 85% 0%, rgba(16,185,129,.16), transparent 62%),
+    linear-gradient(180deg,var(--deep-2),var(--deep));
+}
+.site-footer::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(52,211,153,.06) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(52,211,153,.06) 1px,transparent 1px);
+  background-size:48px 48px;
+  -webkit-mask-image:linear-gradient(180deg,#000,transparent 70%);
+  mask-image:linear-gradient(180deg,#000,transparent 70%);
+}
+.site-footer > .container{position:relative}
+.site-footer h2{
+  color:#fff;font-family:var(--font-mono);font-size:.74rem;letter-spacing:.14em;
+  text-transform:uppercase;margin-bottom:16px;
+}
+.footer__grid{display:grid;grid-template-columns:1.4fr 1fr 1.2fr 1.3fr;gap:40px}
+.site-footer a{color:#fff;text-decoration:none;transition:color .15s}
+.site-footer a:hover{text-decoration:underline;color:var(--green-bright)}
+.site-footer li{margin-bottom:10px;font-size:.92rem}
+.site-footer p{font-size:.92rem;line-height:1.7}
+.footer__brand{display:inline-flex;align-items:center;gap:10px;font-size:1.05rem;font-weight:700;color:#fff;margin-bottom:14px}
+.footer__blurb{color:var(--on-deep);max-width:36ch}
+.footer__disclaimer{border-left:3px solid var(--green-bright);padding-left:15px;color:var(--on-deep)}
+.footer__contact li{display:flex;gap:9px;align-items:flex-start}
+.footer__contact svg{flex:none;margin-top:4px;color:var(--green-bright)}
 .footer__bottom{
-  margin-top:44px;padding:20px 0;border-top:1px solid rgba(255,255,255,.22);
+  margin-top:52px;padding:22px 0;border-top:1px solid var(--deep-line);
   display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between;
-  font-size:.8125rem;color:#BBD4E8;
+  font-size:.8125rem;color:var(--on-deep-dim);
 }
 .footer__bottom p{margin:0;font-size:.8125rem}
+.footer__bottom .mono{font-family:var(--font-mono);letter-spacing:.04em}
+
+/* Clickjacking notice — only revealed by JS when framed. */
+.frame-warning{
+  background:var(--error);color:#fff;padding:12px 16px;text-align:center;
+  font-size:.9rem;font-weight:600;
+}
 
 /* ============================================================
-   RESPONSIVE — single column below 768px
+   RESPONSIVE
    ============================================================ */
+@media (max-width:960px){
+  .hero__inner{grid-template-columns:1fr;gap:40px}
+  .hero{padding:72px 0 108px}
+  .sec-grid{grid-template-columns:repeat(2,1fr)}
+  .footer__grid{grid-template-columns:1fr 1fr;gap:36px}
+}
 @media (max-width:768px){
-  .section{padding:52px 0}
-  .hero{padding:56px 0 72px}
+  .section{padding:56px 0}
+  .hero{padding:56px 0 96px}
   .nav__toggle{display:inline-flex}
+  .nav .status-pill{display:none}
   .nav__menu{
     display:none;position:absolute;left:0;right:0;top:100%;
     flex-direction:column;align-items:stretch;gap:0;
     background:#fff;border-bottom:1px solid var(--border);
-    box-shadow:0 10px 20px rgba(0,0,0,.08);padding:8px 16px 14px;
+    box-shadow:0 12px 24px rgba(4,33,26,.10);padding:8px 16px 14px;
   }
   .nav__menu.is-open{display:flex}
-  .nav__menu a{padding:13px 10px;border-radius:6px}
+  .nav__menu a{padding:13px 10px;border-radius:8px}
   .nav{position:relative}
-  .quick__grid,.grid-2,.footer__grid,.success__meta{grid-template-columns:1fr}
-  .quick{margin-top:-32px;padding-bottom:52px}
-  .form-card,.success{padding:22px}
+  .quick__grid,.grid-2,.sec-grid,.footer__grid,.success__meta{grid-template-columns:1fr}
+  .quick{margin-top:-40px;padding-bottom:56px}
+  .form-card,.success{padding:24px}
   .hero__actions .btn{flex:1 1 100%}
   .radio{flex:1 1 calc(50% - 10px)}
+  .faq__btn{padding:18px 16px}
+  .faq__panel{padding:0 16px 20px 16px}
 }
 
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
-  *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important}
+  *,*::before,*::after{
+    transition-duration:.01ms !important;
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+  }
+  .reveal{opacity:1;transform:none}
+  .term__body > span{opacity:1}
 }
 </style>
 </head>
@@ -336,13 +627,23 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
 
 <a class="skip-link" href="#main">Skip to main content</a>
 
+<!-- Shown only if this page is loaded inside a frame (see SECURITY in the script). -->
+<p class="frame-warning" id="frameWarning" hidden>
+  This page is being displayed inside another site's frame. Do not enter any information here.
+</p>
+
 <!-- ============================================================
      SECTION 1a — STICKY HEADER
      ============================================================ -->
 <header class="site-header">
   <div class="container">
     <nav class="nav" aria-label="Primary">
-      <a class="brand" href="#home">UOB <span class="brand__mark">·</span> IT Service Desk</a>
+      <a class="brand" href="#home">
+        <span class="brand__logo" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6.5v5c0 4.7 3.2 8.6 8 9.5 4.8-.9 8-4.8 8-9.5v-5z"/><path d="m9 12 2 2 4-4"/></svg>
+        </span>
+        <span>UOB <span class="brand__mark">//</span> IT Service Desk</span>
+      </a>
 
       <button class="nav__toggle" id="navToggle" type="button" aria-expanded="false" aria-controls="navMenu">
         <span class="bars" aria-hidden="true"></span>
@@ -352,9 +653,12 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
       <ul class="nav__menu" id="navMenu">
         <li><a href="#home">Home</a></li>
         <li><a href="#ticket">Submit a Ticket</a></li>
+        <li><a href="#security">Security</a></li>
         <li><a href="#faq">FAQ</a></li>
         <li><a href="#contact">Contact</a></li>
       </ul>
+
+      <span class="status-pill"><span class="dot" aria-hidden="true"></span>All systems operational</span>
     </nav>
   </div>
 </header>
@@ -364,13 +668,40 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
   <!-- ============================================================
        SECTION 1b — HERO
        ============================================================ -->
-  <section id="home" class="hero on-blue" aria-labelledby="heroTitle">
-    <div class="container">
-      <h1 id="heroTitle">IT Support, When You Need It</h1>
-      <p class="hero__sub">Log an incident, request access, or find an answer in seconds — one desk for every technology issue across the bank.</p>
-      <div class="hero__actions">
-        <a class="btn btn--primary" href="#ticket">Submit a Ticket</a>
-        <a class="btn btn--ghost" href="#faq">Browse FAQs</a>
+  <section id="home" class="hero on-deep" aria-labelledby="heroTitle">
+    <span class="hero__grid" aria-hidden="true"></span>
+    <span class="hero__scan" aria-hidden="true"></span>
+
+    <div class="container hero__inner">
+      <div>
+        <span class="eyebrow">Internal service desk</span>
+        <h1 id="heroTitle">IT Support, <span class="accent">Engineered</span> for Speed</h1>
+        <p class="hero__sub">Log an incident, request access, or find an answer in seconds — one desk for every technology issue across the bank, triaged the moment you hit submit.</p>
+        <div class="hero__actions">
+          <a class="btn btn--primary" href="#ticket">Submit a Ticket</a>
+          <a class="btn btn--ghost" href="#faq">Browse FAQs</a>
+        </div>
+        <p class="hero__meta">
+          <span><b>24/7</b> critical incident cover</span>
+          <span><b>&lt;4h</b> average first response</span>
+          <span><b>0</b> data leaves your browser</span>
+        </p>
+      </div>
+
+      <!-- Decorative terminal: illustrates the ticket lifecycle. -->
+      <div class="term" aria-hidden="true">
+        <div class="term__bar">
+          <span class="term__dots"><i></i><i></i><i></i></span>
+          <span class="term__title">itsd — triage pipeline</span>
+        </div>
+        <div class="term__body">
+          <span><span class="term__prompt">$</span> itsd ticket new --priority high</span>
+          <span class="term__dim">  parsing request&hellip; category: Network &amp; VPN</span>
+          <span><span class="term__ok">&#10003;</span> routed to <span class="term__ok">Network Engineering</span></span>
+          <span><span class="term__ok">&#10003;</span> SLA clock started &mdash; target 4h</span>
+          <span class="term__dim">  ref: UOB-ITSD-20260831-4821</span>
+          <span><span class="term__prompt">$</span> <span class="caret"></span></span>
+        </div>
       </div>
     </div>
   </section>
@@ -379,17 +710,26 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
   <section class="quick" aria-label="Service desk at a glance">
     <div class="container">
       <div class="quick__grid">
-        <div class="card">
+        <div class="card reveal">
+          <span class="card__icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>
+          </span>
           <h2>Service Desk Hotline</h2>
           <p class="quick__value">1800-XXX-XXXX</p>
           <p class="quick__note">Option 1 for incidents, option 2 for access requests.</p>
         </div>
-        <div class="card">
+        <div class="card reveal">
+          <span class="card__icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 1.9"/></svg>
+          </span>
           <h2>Operating Hours</h2>
           <p class="quick__value">Mon–Fri 8am–8pm</p>
           <p class="quick__note">Singapore time (SGT). Critical incidents 24/7 via hotline.</p>
         </div>
-        <div class="card">
+        <div class="card reveal">
+          <span class="card__icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13H11l-1 9 8.5-11H12z"/></svg>
+          </span>
           <h2>Average Response Time</h2>
           <p class="quick__value">&lt; 4 hours</p>
           <p class="quick__note">Measured across all tickets in the last 30 days.</p>
@@ -399,16 +739,60 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
   </section>
 
   <!-- ============================================================
+       SECTION 1c — SECURITY CONTROLS
+       Each claim below is actually implemented in this file — see the
+       CSP meta tag in <head> and the SECURITY block in the script.
+       ============================================================ -->
+  <section id="security" class="section section--alt" aria-labelledby="securityTitle">
+    <div class="container">
+      <span class="eyebrow">Built secure by default</span>
+      <h2 id="securityTitle">How this page protects you</h2>
+      <p class="section__intro">Security is not a banner — it is enforced in the page itself. These four controls are live on this document right now, and each one is verifiable from view-source.</p>
+
+      <div class="sec-grid">
+        <div class="sec-card reveal">
+          <span class="card__icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          </span>
+          <h3>Nothing is transmitted</h3>
+          <p>A strict Content Security Policy sets <code>default-src 'none'</code> and <code>connect-src 'none'</code>, so no fetch, XHR or websocket can leave this page — even if the code were tampered with.</p>
+        </div>
+        <div class="sec-card reveal">
+          <span class="card__icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/><path d="M7 3v18"/></svg>
+          </span>
+          <h3>Nothing is stored</h3>
+          <p>No cookies and no browser storage of any kind. Submitted tickets live in a JavaScript variable and are gone the moment you reload the page.</p>
+        </div>
+        <div class="sec-card reveal">
+          <span class="card__icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 9.3 8 10.5 4.6-1.2 8-5.5 8-10.5V5z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+          </span>
+          <h3>Credential guard</h3>
+          <p>The description box is scanned as you type. Anything that looks like a password, OTP or card number is flagged — and a card-shaped number blocks submission outright.</p>
+        </div>
+        <div class="sec-card reveal">
+          <span class="card__icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>
+          </span>
+          <h3>No injection surface</h3>
+          <p>Every value you type is rendered with <code>textContent</code>, never as HTML. There is no <code>innerHTML</code>, no <code>eval</code>, and no third-party script anywhere in this file.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
        SECTION 2 — IT SUPPORT TICKET FORM
        ============================================================ -->
-  <section id="ticket" class="section section--alt" aria-labelledby="ticketTitle">
+  <section id="ticket" class="section" aria-labelledby="ticketTitle">
     <div class="container">
       <span class="eyebrow">Step 1 of 1</span>
       <h2 id="ticketTitle">Submit an IT Support Ticket</h2>
       <p class="section__intro">Tell us what's happening and we'll route your request to the right team. Fields marked with an asterisk (*) are required.</p>
 
       <div class="privacy-strip">
-        <span aria-hidden="true">&#128274;</span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
         <p><strong>Never share credentials.</strong> The IT Service Desk will never ask for your password, OTP, PIN or card number — not by phone, email or on this form. Leave them out of your description.</p>
       </div>
 
@@ -416,12 +800,12 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
       <div class="form-card" id="formCard">
         <form id="ticketForm" novalidate>
 
-          <div class="grid-2" style="margin-bottom:22px">
+          <div class="grid-2">
             <!-- Full name -->
             <div class="field">
               <label for="fullName">Full Name <span class="req">*</span></label>
               <input class="control" type="text" id="fullName" name="fullName" autocomplete="name"
-                     aria-describedby="fullName-error">
+                     maxlength="80" enterkeyhint="next" aria-describedby="fullName-error">
               <p class="error" id="fullName-error"></p>
             </div>
 
@@ -429,7 +813,8 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
             <div class="field">
               <label for="staffId">Staff ID <span class="req">*</span></label>
               <input class="control" type="text" id="staffId" name="staffId" inputmode="numeric"
-                     maxlength="6" placeholder="e.g. 482913" aria-describedby="staffId-hint staffId-error">
+                     maxlength="6" spellcheck="false" autocomplete="off" placeholder="e.g. 482913"
+                     aria-describedby="staffId-hint staffId-error">
               <span class="hint" id="staffId-hint">Six digits, as printed on your staff pass.</span>
               <p class="error" id="staffId-error"></p>
             </div>
@@ -439,12 +824,13 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
           <div class="field">
             <label for="email">Corporate Email <span class="req">*</span></label>
             <input class="control" type="email" id="email" name="email" autocomplete="email"
-                   placeholder="name@uobgroup.com" aria-describedby="email-hint email-error">
+                   maxlength="120" spellcheck="false" placeholder="name@uobgroup.com"
+                   aria-describedby="email-hint email-error">
             <span class="hint" id="email-hint">Must be your corporate address ending in @uobgroup.com.</span>
             <p class="error" id="email-error"></p>
           </div>
 
-          <div class="grid-2" style="margin-bottom:22px">
+          <div class="grid-2">
             <!-- Department -->
             <div class="field">
               <label for="department">Department <span class="req">*</span></label>
@@ -488,7 +874,7 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
               <label class="radio"><input type="radio" name="priority" value="Critical"> Critical</label>
             </div>
             <div class="note" id="criticalNote">
-              <span aria-hidden="true">&#9742;</span>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>
               <p><strong>Critical</strong> incidents must also be phoned in to the Service Desk hotline on <strong>1800-XXX-XXXX</strong> so an engineer can be paged immediately.</p>
             </div>
             <p class="error" id="priority-error"></p>
@@ -505,7 +891,7 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
 
           <!-- Credential warning (revealed by JS) -->
           <div class="warn" id="credWarning" role="alert" hidden>
-            <span aria-hidden="true">&#9888;</span>
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
             <p><strong>Remove your credentials before submitting.</strong>
                Never share passwords, OTPs, PINs or card numbers — with the Service Desk or anyone else. We will never ask for them, and we don't need them to fix your issue.</p>
           </div>
@@ -513,7 +899,7 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
           <!-- Description -->
           <div class="field">
             <label for="description"><span class="counter" id="descCount" aria-hidden="true">0 characters</span>Description <span class="req">*</span></label>
-            <textarea class="control" id="description" name="description"
+            <textarea class="control" id="description" name="description" maxlength="4000"
                       placeholder="What happened, when it started, and any error message shown on screen."
                       aria-describedby="description-hint description-error"></textarea>
             <span class="hint" id="description-hint">Minimum 20 characters. Do not include passwords, OTPs or card numbers.</span>
@@ -522,14 +908,18 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
 
           <!-- Attachment -->
           <div class="field">
-            <span class="legend-text" id="attachLabel">Attachment <span style="color:var(--muted);font-weight:500">(optional)</span></span>
+            <span class="legend-text" id="attachLabel">Attachment <span class="optional">(optional)</span></span>
             <div class="file-row">
               <input class="visually-hidden" type="file" id="attachment" name="attachment"
-                     accept=".png,.jpg,.pdf,.docx" aria-describedby="attach-hint">
-              <label class="file-btn" for="attachment">Choose file…</label>
+                     accept=".png,.jpg,.jpeg,.pdf,.docx" aria-describedby="attach-hint attachment-error">
+              <label class="file-btn" for="attachment">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5-5 5 5"/><path d="M12 5v12"/></svg>
+                Choose file…
+              </label>
               <span class="file-name" id="fileName" aria-live="polite">No file chosen</span>
             </div>
-            <span class="hint" id="attach-hint">Accepted formats: .png, .jpg, .pdf, .docx</span>
+            <span class="hint" id="attach-hint">Accepted formats: .png, .jpg, .pdf, .docx — 5 MB maximum.</span>
+            <p class="error" id="attachment-error"></p>
           </div>
 
           <!-- Confirmation -->
@@ -542,7 +932,7 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
           </div>
 
           <div class="form-actions">
-            <button class="btn btn--blue" type="submit">Submit Ticket</button>
+            <button class="btn btn--green" type="submit">Submit Ticket</button>
             <p class="form-error-summary" id="formSummary" role="alert"></p>
           </div>
         </form>
@@ -550,7 +940,10 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
 
       <!-- ---------- Success panel ---------- -->
       <div class="success" id="successPanel" hidden>
-        <h3 id="successHeading" tabindex="-1">&#10004; Ticket submitted successfully</h3>
+        <h3 id="successHeading" tabindex="-1">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.6 2.6L16 9.7"/></svg>
+          Ticket submitted successfully
+        </h3>
         <p>Thanks — your ticket is in the queue and a confirmation has been sent to your corporate mailbox. Quote this reference in any follow-up:</p>
         <p class="success__ref" id="successRef">UOB-ITSD-00000000-0000</p>
         <dl class="success__meta">
@@ -570,18 +963,18 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
   </section>
 
   <!-- ============================================================
-       SECTION 3 — FAQ
+       SECTION 3 — FAQ ACCORDION
        ============================================================ -->
-  <section id="faq" class="section" aria-labelledby="faqTitle">
+  <section id="faq" class="section section--alt" aria-labelledby="faqTitle">
     <div class="container">
       <span class="eyebrow">Self-service</span>
       <h2 id="faqTitle">Frequently Asked Questions</h2>
-      <p class="section__intro">Many issues can be resolved without raising a ticket. Search below, or browse the most common questions we receive.</p>
+      <p class="section__intro">Many issues can be resolved without raising a ticket. Search below, or browse the most common questions we receive. Use the up and down arrow keys to move between questions.</p>
 
       <div class="faq__search">
-        <label class="visually-hidden" for="faqSearch" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap">Search FAQs</label>
+        <label class="visually-hidden" for="faqSearch">Search FAQs</label>
         <input class="control" type="search" id="faqSearch" placeholder="Search FAQs — e.g. VPN, password, laptop"
-               aria-controls="faqList" aria-describedby="faqSearchHint">
+               autocomplete="off" aria-controls="faqList" aria-describedby="faqSearchHint">
         <span class="hint" id="faqSearchHint">Results filter as you type.</span>
       </div>
 
@@ -590,7 +983,8 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
         <div class="faq__item">
           <h3 class="faq__q">
             <button class="faq__btn" type="button" aria-expanded="false" aria-controls="faqPanel1">
-              How do I reset my network password?
+              <span class="faq__num" aria-hidden="true">01</span>
+              <span class="faq__text">How do I reset my network password?</span>
               <svg class="chev" width="16" height="10" viewBox="0 0 12 8" aria-hidden="true"><path fill="currentColor" d="M1.4 0 6 4.6 10.6 0 12 1.4 6 7.4 0 1.4z"/></svg>
             </button>
           </h3>
@@ -602,7 +996,8 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
         <div class="faq__item">
           <h3 class="faq__q">
             <button class="faq__btn" type="button" aria-expanded="false" aria-controls="faqPanel2">
-              How long will my ticket take to be resolved?
+              <span class="faq__num" aria-hidden="true">02</span>
+              <span class="faq__text">How long will my ticket take to be resolved?</span>
               <svg class="chev" width="16" height="10" viewBox="0 0 12 8" aria-hidden="true"><path fill="currentColor" d="M1.4 0 6 4.6 10.6 0 12 1.4 6 7.4 0 1.4z"/></svg>
             </button>
           </h3>
@@ -614,7 +1009,8 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
         <div class="faq__item">
           <h3 class="faq__q">
             <button class="faq__btn" type="button" aria-expanded="false" aria-controls="faqPanel3">
-              How do I connect to the corporate VPN from home?
+              <span class="faq__num" aria-hidden="true">03</span>
+              <span class="faq__text">How do I connect to the corporate VPN from home?</span>
               <svg class="chev" width="16" height="10" viewBox="0 0 12 8" aria-hidden="true"><path fill="currentColor" d="M1.4 0 6 4.6 10.6 0 12 1.4 6 7.4 0 1.4z"/></svg>
             </button>
           </h3>
@@ -626,7 +1022,8 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
         <div class="faq__item">
           <h3 class="faq__q">
             <button class="faq__btn" type="button" aria-expanded="false" aria-controls="faqPanel4">
-              My laptop won't boot — what should I do?
+              <span class="faq__num" aria-hidden="true">04</span>
+              <span class="faq__text">My laptop won't boot — what should I do?</span>
               <svg class="chev" width="16" height="10" viewBox="0 0 12 8" aria-hidden="true"><path fill="currentColor" d="M1.4 0 6 4.6 10.6 0 12 1.4 6 7.4 0 1.4z"/></svg>
             </button>
           </h3>
@@ -638,7 +1035,8 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
         <div class="faq__item">
           <h3 class="faq__q">
             <button class="faq__btn" type="button" aria-expanded="false" aria-controls="faqPanel5">
-              How do I request new software to be installed?
+              <span class="faq__num" aria-hidden="true">05</span>
+              <span class="faq__text">How do I request new software to be installed?</span>
               <svg class="chev" width="16" height="10" viewBox="0 0 12 8" aria-hidden="true"><path fill="currentColor" d="M1.4 0 6 4.6 10.6 0 12 1.4 6 7.4 0 1.4z"/></svg>
             </button>
           </h3>
@@ -650,7 +1048,8 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
         <div class="faq__item">
           <h3 class="faq__q">
             <button class="faq__btn" type="button" aria-expanded="false" aria-controls="faqPanel6">
-              I received a suspicious email — what now?
+              <span class="faq__num" aria-hidden="true">06</span>
+              <span class="faq__text">I received a suspicious email — what now?</span>
               <svg class="chev" width="16" height="10" viewBox="0 0 12 8" aria-hidden="true"><path fill="currentColor" d="M1.4 0 6 4.6 10.6 0 12 1.4 6 7.4 0 1.4z"/></svg>
             </button>
           </h3>
@@ -662,7 +1061,8 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
         <div class="faq__item">
           <h3 class="faq__q">
             <button class="faq__btn" type="button" aria-expanded="false" aria-controls="faqPanel7">
-              How do I get access to a shared drive or application?
+              <span class="faq__num" aria-hidden="true">07</span>
+              <span class="faq__text">How do I get access to a shared drive or application?</span>
               <svg class="chev" width="16" height="10" viewBox="0 0 12 8" aria-hidden="true"><path fill="currentColor" d="M1.4 0 6 4.6 10.6 0 12 1.4 6 7.4 0 1.4z"/></svg>
             </button>
           </h3>
@@ -674,7 +1074,8 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
         <div class="faq__item">
           <h3 class="faq__q">
             <button class="faq__btn" type="button" aria-expanded="false" aria-controls="faqPanel8">
-              How do I track or update an existing ticket?
+              <span class="faq__num" aria-hidden="true">08</span>
+              <span class="faq__text">How do I track or update an existing ticket?</span>
               <svg class="chev" width="16" height="10" viewBox="0 0 12 8" aria-hidden="true"><path fill="currentColor" d="M1.4 0 6 4.6 10.6 0 12 1.4 6 7.4 0 1.4z"/></svg>
             </button>
           </h3>
@@ -693,27 +1094,53 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
 <!-- ============================================================
      FOOTER
      ============================================================ -->
-<footer class="site-footer" id="contact">
+<footer class="site-footer on-deep" id="contact">
   <div class="container">
     <div class="footer__grid">
+      <div>
+        <span class="footer__brand">
+          <span class="brand__logo" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6.5v5c0 4.7 3.2 8.6 8 9.5 4.8-.9 8-4.8 8-9.5v-5z"/><path d="m9 12 2 2 4-4"/></svg>
+          </span>
+          IT Service Desk
+        </span>
+        <p class="footer__blurb">One desk for every technology issue across the bank — incidents, access requests and hardware, triaged and routed the moment you submit.</p>
+        <span class="status-pill"><span class="dot" aria-hidden="true"></span>All systems operational</span>
+      </div>
+
       <div>
         <h2>Quick Links</h2>
         <ul>
           <li><a href="#home">Home</a></li>
           <li><a href="#ticket">Submit a Ticket</a></li>
+          <li><a href="#security">Security</a></li>
           <li><a href="#faq">FAQ</a></li>
           <li><a href="#contact">Contact</a></li>
         </ul>
       </div>
+
       <div>
         <h2>Contact the Service Desk</h2>
-        <ul>
-          <li>Hotline: <a href="tel:1800XXXXXXX">1800-XXX-XXXX</a></li>
-          <li>Email: <a href="mailto:itservicedesk@uobgroup.com">itservicedesk@uobgroup.com</a></li>
-          <li>Hours: Mon–Fri, 8am–8pm SGT</li>
-          <li>Walk-in desk: Level 3, IT Wing</li>
+        <ul class="footer__contact">
+          <li>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>
+            <span>Hotline: <a href="tel:1800XXXXXXX">1800-XXX-XXXX</a></span>
+          </li>
+          <li>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>
+            <span>Email: <a href="mailto:itservicedesk@uobgroup.com">itservicedesk@uobgroup.com</a></span>
+          </li>
+          <li>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 1.9"/></svg>
+            <span>Hours: Mon–Fri, 8am–8pm SGT</span>
+          </li>
+          <li>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 5.5-8 12-8 12s-8-6.5-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="2.8"/></svg>
+            <span>Walk-in desk: Level 3, IT Wing</span>
+          </li>
         </ul>
       </div>
+
       <div>
         <h2>About This Site</h2>
         <p class="footer__disclaimer">This page is a fictional mockup built for IT support and web development training. All names, numbers, references and SLAs shown here are illustrative and no ticket is ever sent anywhere — nothing you type leaves your browser.</p>
@@ -721,7 +1148,8 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
     </div>
 
     <div class="footer__bottom">
-      <p>© <span id="year">2026</span> IT Service Desk — Training Demo.</p>
+      <p class="mono">© <span id="year">2026</span> IT Service Desk — Training Demo.</p>
+      <p class="mono">No cookies · No tracking · No network calls</p>
       <p>Training demo — not affiliated with or endorsed by United Overseas Bank Limited.</p>
     </div>
   </div>
@@ -730,6 +1158,29 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
 <script>
 (function () {
   'use strict';
+
+  /* ============================================================
+     SECURITY — defensive posture for a page that must never leak
+     ------------------------------------------------------------
+     The CSP meta tag in <head> is the primary control. These are the
+     runtime complements to it:
+       1. Clickjacking notice. `frame-ancestors` is ignored in a meta
+          CSP, so if this document is ever framed we say so loudly
+          rather than letting it be used as UI-redress bait.
+       2. Frozen constants, so nothing can be re-pointed at runtime.
+     No storage, no network, no innerHTML, no eval anywhere below.
+     ============================================================ */
+  try {
+    if (window.top !== window.self) {
+      document.getElementById('frameWarning').hidden = false;
+    }
+  } catch (e) {
+    // Cross-origin access to window.top throws — which itself means we're framed.
+    document.getElementById('frameWarning').hidden = false;
+  }
+
+  var prefersReducedMotion = window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ============================================================
      SECTION 1 — NAV: mobile hamburger toggle
@@ -751,6 +1202,29 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
     }
   });
 
+  /* ---------- Scroll reveal (decorative) ----------
+     Elements start at opacity 0 via CSS only when JS can restore them.
+     If IntersectionObserver is unavailable, or motion is reduced, every
+     element is shown immediately. */
+  var revealables = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
+
+  if (prefersReducedMotion || !('IntersectionObserver' in window)) {
+    revealables.forEach(function (el) { el.classList.add('is-in'); });
+  } else {
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        // Stagger siblings so a row of cards arrives as a wave, not a block.
+        var siblings = Array.prototype.slice.call(entry.target.parentNode.children);
+        entry.target.style.transitionDelay = (siblings.indexOf(entry.target) * 90) + 'ms';
+        entry.target.classList.add('is-in');
+        observer.unobserve(entry.target);
+      });
+    }, { rootMargin: '0px 0px -12% 0px', threshold: 0.12 });
+
+    revealables.forEach(function (el) { observer.observe(el); });
+  }
+
   /* ============================================================
      SECTION 2 — TICKET FORM
      ============================================================ */
@@ -762,6 +1236,7 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
   var criticalNote  = document.getElementById('criticalNote');
   var fileInput     = document.getElementById('attachment');
   var fileName      = document.getElementById('fileName');
+  var fileError     = document.getElementById('attachment-error');
   var subject       = document.getElementById('subject');
   var subjectCount  = document.getElementById('subjectCount');
   var description   = document.getElementById('description');
@@ -770,12 +1245,16 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
   // In-memory store only. No localStorage, no sessionStorage, no network calls.
   var tickets = [];
 
-  var SLA = {
+  var SLA = Object.freeze({
     Critical: '1 hour',
     High:     '4 hours',
     Medium:   '1 business day',
     Low:      '3 business days'
-  };
+  });
+
+  // Attachment policy — mirrored in the hint text under the file row.
+  var MAX_FILE_BYTES = 5 * 1024 * 1024;
+  var ALLOWED_EXT = Object.freeze(['png', 'jpg', 'jpeg', 'pdf', 'docx']);
 
   /* ---------- Validation rules: each returns an error string, or '' ---------- */
   var validators = {
@@ -807,16 +1286,19 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
       if (v.trim().length < 20) return 'Please provide at least 20 characters so we can triage the issue.';
       return '';
     },
+    // Optional field, but when a file IS chosen it must pass type and size checks.
+    attachment: function (v) { return v; },
     confirm: function (v) { return v ? '' : 'Please confirm the information provided is accurate.'; }
   };
 
-  // Reads the current value of a field by id (radios and checkbox handled specially).
+  // Reads the current value of a field by id (radios, checkbox and file handled specially).
   function valueOf(id) {
     if (id === 'priority') {
       var picked = form.querySelector('input[name="priority"]:checked');
       return picked ? picked.value : '';
     }
     if (id === 'confirm') return document.getElementById('confirm').checked;
+    if (id === 'attachment') return checkAttachment();
     return document.getElementById(id).value;
   }
 
@@ -851,7 +1333,7 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
       return;
     }
     var el = document.getElementById(id);
-    var evt = (el.tagName === 'SELECT' || el.type === 'checkbox') ? 'change' : 'blur';
+    var evt = (el.tagName === 'SELECT' || el.type === 'checkbox' || el.type === 'file') ? 'change' : 'blur';
     el.addEventListener(evt, function () { validateField(id); });
     // Once a field has been flagged, re-check as the user types so the error clears.
     el.addEventListener('input', function () {
@@ -879,9 +1361,24 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
     });
   });
 
-  /* ---------- Attachment: display the chosen filename only ---------- */
+  /* ---------- Attachment: validate type/size, display the filename only ----------
+     The file is never read, never uploaded — only its name is shown, and only
+     ever via textContent so a hostile filename cannot become markup. */
+  function checkAttachment() {
+    if (!fileInput.files || !fileInput.files.length) return '';
+    var f = fileInput.files[0];
+    var ext = f.name.split('.').pop().toLowerCase();
+    if (ALLOWED_EXT.indexOf(ext) === -1) {
+      return 'That file type is not accepted. Use .png, .jpg, .pdf or .docx.';
+    }
+    if (f.size > MAX_FILE_BYTES) {
+      return 'That file is larger than the 5 MB limit.';
+    }
+    return '';
+  }
+
   fileInput.addEventListener('change', function () {
-    fileName.innerHTML = '';
+    fileName.textContent = '';                        // never innerHTML
     if (fileInput.files && fileInput.files.length) {
       var strong = document.createElement('strong');
       strong.textContent = fileInput.files[0].name;   // textContent — never parsed as HTML
@@ -893,8 +1390,9 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
 
   /* ---------- Credential guard -----------------------------------------
      Heuristic only: warns when the description looks like it contains a
-     password, OTP, PIN or card number. A card-shaped number is treated as
-     unambiguous and blocks submission; everything else is a warning.
+     password, OTP, PIN, API token or card number. A card-shaped number is
+     treated as unambiguous and blocks submission; everything else is a
+     warning that still lets the ticket through.
      -------------------------------------------------------------------- */
   var CRED_WORD = '(?:pass\\s?word|passwd|pwd|otp|one[-\\s]?time\\s?(?:pass|code)|passcode|pin|credentials?|secret\\s?key)';
   var CRED_PATTERNS = [
@@ -903,7 +1401,9 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
     // common "my password is not working" / "the password reset link" phrasing.
     new RegExp('\\b' + CRED_WORD + '\\b\\s*(?:is|are|was|:|=|-)\\s*(?=\\S*[\\d!@#$%^&*"\'])\\S{3,}', 'i'),
     // "login: jtan / Passw0rd" style credential pairs.
-    /\blogin\s*(?:id|details)?\s*[:=]\s*\S+\s*[\/|,]\s*\S+/i
+    /\blogin\s*(?:id|details)?\s*[:=]\s*\S+\s*[\/|,]\s*\S+/i,
+    // Pasted API tokens / bearer credentials: the marker plus a long opaque string.
+    /\b(?:bearer|api[-\s]?key|access[-\s]?token|auth\s?token)\b\s*[:=]?\s*[A-Za-z0-9_\-.]{16,}/i
   ];
   var CARD_PATTERN = /\b(?:\d[ -]?){13,19}\b/;
 
@@ -924,6 +1424,12 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
   description.addEventListener('input', function () {
     clearTimeout(credTimer);
     credTimer = setTimeout(runCredentialScan, 200);
+  });
+
+  // A paste is the highest-risk moment for credential leakage — scan it at once
+  // rather than waiting out the debounce.
+  description.addEventListener('paste', function () {
+    setTimeout(runCredentialScan, 0);
   });
 
   /* ---------- Mock ticket reference: UOB-ITSD-YYYYMMDD-#### ---------- */
@@ -997,6 +1503,7 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
 
     Object.keys(validators).forEach(function (id) { showError(id, ''); });
     formSummary.textContent = '';
+    fileError.textContent = '';
     credWarning.hidden = true;
     credState = { flagged: false, blocking: false };
     criticalNote.classList.remove('is-active');
@@ -1013,6 +1520,10 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
 
   /* ============================================================
      SECTION 3 — FAQ: accordion + live search
+
+     Custom buttons rather than <details> so that one-open-at-a-time,
+     the chevron transition and roving arrow-key navigation can all be
+     controlled explicitly.
      ============================================================ */
   var faqItems  = Array.prototype.slice.call(document.querySelectorAll('.faq__item'));
   var faqSearch = document.getElementById('faqSearch');
@@ -1021,6 +1532,13 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
   function closeItem(btn) {
     btn.setAttribute('aria-expanded', 'false');
     document.getElementById(btn.getAttribute('aria-controls')).hidden = true;
+  }
+
+  // The visible (unfiltered) buttons, in document order — the arrow-key ring.
+  function visibleButtons() {
+    return faqItems
+      .filter(function (item) { return !item.hidden; })
+      .map(function (item) { return item.querySelector('.faq__btn'); });
   }
 
   faqItems.forEach(function (item) {
@@ -1036,6 +1554,20 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
         btn.setAttribute('aria-expanded', 'true');
         document.getElementById(btn.getAttribute('aria-controls')).hidden = false;
       }
+    });
+
+    // Arrow / Home / End move between headers, per the ARIA accordion pattern.
+    btn.addEventListener('keydown', function (e) {
+      var keys = { ArrowDown: 1, ArrowUp: -1, Home: 0, End: 0 };
+      if (!(e.key in keys)) return;
+      var buttons = visibleButtons();
+      var i = buttons.indexOf(btn);
+      if (i === -1) return;
+      var next;
+      if (e.key === 'Home')      next = buttons[0];
+      else if (e.key === 'End')  next = buttons[buttons.length - 1];
+      else                       next = buttons[(i + keys[e.key] + buttons.length) % buttons.length];
+      if (next) { e.preventDefault(); next.focus(); }
     });
   });
 

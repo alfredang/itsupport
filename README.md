@@ -4,14 +4,16 @@
 
 A single-page internal IT Service Desk portal: ticket submission with full client-side
 validation, a searchable FAQ accordion, and a mock ticket-reference generator. Built as a
-teaching example of accessible, dependency-free front-end work.
+teaching example of accessible, dependency-free front-end work — a dark-green terminal
+aesthetic, CSS-only motion, and a Content Security Policy that makes "nothing leaves the
+browser" enforceable rather than merely claimed.
 
-![The IT Service Desk landing page: hero banner with Submit a Ticket and Browse FAQs buttons, above three cards showing the hotline, operating hours and average response time](docs/hero.png)
+![The IT Service Desk landing page: a dark green hero with a drifting grid backdrop, the headline "IT Support, Engineered for Speed", Submit a Ticket and Browse FAQs buttons, and a mock terminal panel showing a ticket being routed; three white cards below list the hotline, operating hours and average response time](docs/hero.png)
 
 <details>
 <summary>Full page — ticket form, credential guard and FAQ accordion</summary>
 
-![Full-length page screenshot: the hero and contact cards, the nine-field ticket form with its credential warning, and the eight-item FAQ accordion above the footer](docs/screenshot.png)
+![Full-length page screenshot: the hero and contact cards, a four-card band explaining the page's security controls, the ticket form part-filled and showing a staff-ID validation error plus the amber credential warning, the FAQ accordion with its third item expanded, and the dark four-column footer](docs/screenshot.png)
 
 </details>
 
@@ -35,7 +37,7 @@ something has been added that shouldn't have been.
 
 ## What's in it
 
-One file, `index.html` (~1,070 lines): markup, a `<style>` block and a `<script>` block,
+One file, `index.html` (~1,600 lines): markup, a `<style>` block and a `<script>` block,
 divided by `SECTION` marker comments that use matching numbering across all three.
 
 - **Ticket form** — nine fields with per-field validation on blur and on submit, inline
@@ -45,8 +47,19 @@ divided by `SECTION` marker comments that use matching numbering across all thre
 - **Credential guard** — the description field is scanned for anything resembling a
   password, OTP, PIN or card number, and warns the user rather than accepting it. The
   form deliberately collects no credentials of any kind.
-- **FAQ** — eight accordion items, one open at a time, with live keyword search over both
-  questions and answers and a no-results state.
+- **FAQ accordion** — eight items, one open at a time, built from buttons with
+  `aria-expanded` rather than `<details>` so the chevron transition, the single-open rule and
+  Arrow/Home/End navigation between headers can all be controlled explicitly. Live keyword
+  search filters over both questions and answers, with a no-results state.
+- **Security controls** — a `default-src 'none'` Content Security Policy in `<head>`, a
+  clickjacking banner if the page is ever framed, attachment type/size checks, and a rule
+  that every user-supplied string (filenames included) reaches the DOM via `textContent`.
+  The four claims in the page's own Security section are each actually implemented.
+- **Motion** — a drifting grid and a scanning sweep behind the hero, a terminal panel that
+  types itself in, a scroll-reveal stagger driven by `IntersectionObserver`, and hover lifts
+  on cards and buttons. All of it is decorative and all of it is switched off by
+  `prefers-reduced-motion`; if the observer is unavailable the content is shown immediately
+  rather than left invisible.
 
 ## Design constraints
 
@@ -57,7 +70,8 @@ These are the exercise, not incidental details. Changes that break them defeat t
 | One self-contained file | Must run by double-clicking, with no build step or server |
 | No `localStorage` / `sessionStorage` | Submitted tickets live in an in-memory array and are intentionally lost on reload |
 | No `fetch` / `XMLHttpRequest` | Nothing the user types may leave the browser |
-| No external assets | Icons are inline SVG; the select chevron is a `data:` URI |
+| No external assets | Icons are inline SVG; the select chevron is a `data:` URI. This rules out Google Fonts — the type stacks name real families first and fall back to platform fonts |
+| The CSP meta tag stays | It is what makes "no network" enforceable; the page's Security section describes it, so the two must move together |
 | No credential collection | And the description field actively warns against pasting one |
 | Footer disclaimer stays visible | It is what makes the bank branding acceptable |
 
@@ -76,8 +90,15 @@ The only expected match is the source comment that names them.
   keyed by the input's `id`, an empty `<p class="error" id="<id>-error">` in the markup, and
   `aria-describedby="<id>-error"` on the control. The registry drives validation, submission,
   error clearing and reset — miss a piece and the field is silently skipped.
-- **Colours come from `:root` custom properties.** Change the token, not the call site. The
-  gold accent is for borders and fills only; it fails AA contrast as small text on white.
+- **Colours come from `:root` custom properties.** Change the token, not the call site.
+  `--green` (#047857) is the only green that clears AA on white; `--green-bright` and `--cyan`
+  belong on dark surfaces and in fills, never as small text on white.
+- **`[hidden]{display:none !important}` at the top of the reset is load-bearing.** Panels that
+  JS toggles via the `hidden` property carry classes with `display:flex` (`.warn`, `.note`),
+  which out-specify the UA `[hidden]` rule. Remove it and the credential warning shows
+  permanently.
+- **`.term__body > span` needs the child combinator.** A descendant selector breaks the inline
+  `.term__ok` / `.term__prompt` spans in the hero terminal onto their own lines.
 - **Focus rings are never removed**, only restyled through `:focus-visible`.
 - **The credential regexes are deliberately tuned** to ignore "my password is not working"
   and "the password reset link" — the two most common real service-desk phrasings. Loosening
