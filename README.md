@@ -6,6 +6,15 @@ A single-page internal IT Service Desk portal: ticket submission with full clien
 validation, a searchable FAQ accordion, and a mock ticket-reference generator. Built as a
 teaching example of accessible, dependency-free front-end work.
 
+![The IT Service Desk landing page: hero banner with Submit a Ticket and Browse FAQs buttons, above three cards showing the hotline, operating hours and average response time](docs/hero.png)
+
+<details>
+<summary>Full page — ticket form, credential guard and FAQ accordion</summary>
+
+![Full-length page screenshot: the hero and contact cards, the nine-field ticket form with its credential warning, and the eight-item FAQ accordion above the footer](docs/screenshot.png)
+
+</details>
+
 > **Training demo — not affiliated with or endorsed by United Overseas Bank Limited.**
 > Every name, hotline, email address, SLA and ticket reference on this page is fictional.
 > Nothing is submitted anywhere: there is no backend, no analytics and no network request
