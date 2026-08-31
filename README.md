@@ -1,5 +1,7 @@
 # IT Support Service Desk — Training Demo
 
+**Live demo: <https://alfredang.github.io/itsupport/>**
+
 A single-page internal IT Service Desk portal: ticket submission with full client-side
 validation, a searchable FAQ accordion, and a mock ticket-reference generator. Built as a
 teaching example of accessible, dependency-free front-end work.
