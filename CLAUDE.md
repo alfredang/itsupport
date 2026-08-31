@@ -18,6 +18,10 @@ These are the point of the exercise, not incidental. Breaking any of them breaks
 - **No persistence, no network.** `localStorage`, `sessionStorage`, `fetch`, and
   `XMLHttpRequest` are forbidden. Submitted tickets are pushed onto the in-memory `tickets`
   array and are intentionally lost on reload.
+  **One deliberate exception**: the WhatsApp widget's `https://wa.me/...` links. Those are
+  user-initiated navigations *away* from the page, not requests the page issues -- the document
+  still loads zero external resources and transmits nothing on its own, and the CSP still blocks
+  fetch/XHR/websockets outright. Do not add any other `http` URL.
 - **No external assets.** The only SVGs are inline; the select chevron is a `data:` URI. The
   sole allowed `http` string in the file is the SVG namespace `www.w3.org/2000/svg`. This rules
   out Google Fonts — `--font` / `--font-mono` are stacks that name real families first and fall
@@ -42,7 +46,12 @@ There is no test framework. Verification is ad-hoc Node against the source:
 ```bash
 # Constraint check — must print only the comment line that mentions them
 grep -inE "localStorage|sessionStorage|fetch\(|XMLHttpRequest|https?://" index.html \
-  | grep -v "www.w3.org/2000/svg"
+  | grep -vE "www[.]w3[.]org/2000/svg|wa[.]me/"
+
+# Two strings are allowlisted above: the inline-SVG namespace, and the WhatsApp widget's
+# wa.me links. The number appears in six hrefs plus the widget's visible disclaimer --
+# all seven must change together.
+grep -c "6596983731|9698 3731" index.html
 
 # Parse the script block + audit tag balance and ARIA reference integrity
 node -e "
@@ -125,6 +134,19 @@ re-run the corpus above with both the should-flag and should-be-clean cases.
   mirrored in prose in FAQ item 2; update both together.
 - **Success panel**: swaps with the form via the `hidden` property and moves focus to the
   heading (`tabindex="-1"`).
+
+### WhatsApp widget
+
+A fixed launcher bottom-right (`z-index:60`, above the sticky header) plus a `--deep` panel of
+suggested questions. **The chips and the CTA are plain `<a href>` links in the markup** -- the
+widget works with JavaScript off, and the script only adds open/close, focus handling, and the
+Escape / outside-click / focus-out dismissals. Nothing in the JS builds a URL.
+
+Each link is a fully written-out `https://wa.me/<number>?text=<pre-encoded message>`, so the
+number is repeated; see the grep above. `.wa__foot` sits *outside* the scrolling `.wa__body` on
+purpose -- the "not a bank support channel" line must stay visible when the suggestions scroll
+on a short screen. That disclaimer, and the panel's framing as the trainer's contact, are what
+keep a live chat button on a bank-branded page from reading as a real support line. Keep both.
 
 ### Security posture
 

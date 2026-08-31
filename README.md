@@ -8,12 +8,12 @@ teaching example of accessible, dependency-free front-end work — a dark-green 
 aesthetic, CSS-only motion, and a Content Security Policy that makes "nothing leaves the
 browser" enforceable rather than merely claimed.
 
-![The IT Service Desk landing page: a dark green hero with a drifting grid backdrop, the headline "IT Support, Engineered for Speed", Submit a Ticket and Browse FAQs buttons, and a mock terminal panel showing a ticket being routed; three white cards below list the hotline, operating hours and average response time](docs/hero.png)
+![The IT Service Desk landing page: a dark green hero with a drifting grid backdrop, the headline "IT Support, Engineered for Speed", Submit a Ticket and Browse FAQs buttons, and a mock terminal panel showing a ticket being routed; the WhatsApp chat widget is open bottom-right with five suggested questions; three white cards below list the hotline, operating hours and average response time](docs/hero.png)
 
 <details>
 <summary>Full page — ticket form, credential guard and FAQ accordion</summary>
 
-![Full-length page screenshot: the hero and contact cards, a four-card band explaining the page's security controls, the ticket form part-filled and showing a staff-ID validation error plus the amber credential warning, the FAQ accordion with its third item expanded, and the dark four-column footer](docs/screenshot.png)
+![Full-length page screenshot: the hero and contact cards, a four-card band explaining the page's security controls, the ticket form part-filled and showing a staff-ID validation error plus the amber credential warning, the FAQ accordion with its third item expanded, the dark four-column footer, and the WhatsApp widget open over the hero](docs/screenshot.png)
 
 </details>
 
@@ -55,6 +55,12 @@ divided by `SECTION` marker comments that use matching numbering across all thre
   clickjacking banner if the page is ever framed, attachment type/size checks, and a rule
   that every user-supplied string (filenames included) reaches the DOM via `textContent`.
   The four claims in the page's own Security section are each actually implemented.
+- **WhatsApp widget** — a floating launcher bottom-right opens a panel of suggested
+  questions, each of which hands off to WhatsApp with the message pre-filled. The chips and
+  the CTA are plain `<a href>` links, so the widget works with JavaScript disabled; the script
+  only adds open/close, focus handling, and Escape / outside-click dismissal. It is labelled
+  as the course trainer's contact, not a bank support channel, and that disclaimer is pinned
+  outside the scroll area so it stays visible on short screens.
 - **Motion** — a drifting grid and a scanning sweep behind the hero, a terminal panel that
   types itself in, a scroll-reveal stagger driven by `IntersectionObserver`, and hover lifts
   on cards and buttons. All of it is decorative and all of it is switched off by
@@ -69,7 +75,7 @@ These are the exercise, not incidental details. Changes that break them defeat t
 | --- | --- |
 | One self-contained file | Must run by double-clicking, with no build step or server |
 | No `localStorage` / `sessionStorage` | Submitted tickets live in an in-memory array and are intentionally lost on reload |
-| No `fetch` / `XMLHttpRequest` | Nothing the user types may leave the browser |
+| No `fetch` / `XMLHttpRequest` | Nothing the user types may leave the browser. The one allowed external URL is the WhatsApp widget's `wa.me` link, which is a navigation the *user* chooses, not a request the page makes |
 | No external assets | Icons are inline SVG; the select chevron is a `data:` URI. This rules out Google Fonts — the type stacks name real families first and fall back to platform fonts |
 | The CSP meta tag stays | It is what makes "no network" enforceable; the page's Security section describes it, so the two must move together |
 | No credential collection | And the description field actively warns against pasting one |
@@ -79,10 +85,11 @@ Verify the first four at any time:
 
 ```bash
 grep -inE "localStorage|sessionStorage|fetch\(|XMLHttpRequest|https?://" index.html \
-  | grep -v "www.w3.org/2000/svg"
+  | grep -vE "www[.]w3[.]org/2000/svg|wa[.]me/"
 ```
 
-The only expected match is the source comment that names them.
+The only expected match is the source comment that names them. Two strings are allowlisted:
+the inline-SVG namespace and the WhatsApp widget's `wa.me` links.
 
 ## Conventions worth knowing before editing
 
@@ -104,6 +111,8 @@ The only expected match is the source comment that names them.
   and "the password reset link" — the two most common real service-desk phrasings. Loosening
   them reintroduces constant false positives.
 - **The SLA table appears twice** — in the `SLA` object and in prose in FAQ item 2. Update both.
+- **The WhatsApp number appears seven times** — six `wa.me` hrefs plus the widget's visible
+  disclaimer. `grep -c "6596983731|9698 3731" index.html` should return 7; change them together.
 
 ## Testing
 

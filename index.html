@@ -585,6 +585,120 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
 }
 
 /* ============================================================
+   SECTION 4 — FLOATING WHATSAPP WIDGET
+   Styled from the same tokens as the hero and footer: a --deep panel
+   with the --green-bright accent, mono eyebrows and the site radius.
+   WhatsApp's own brand green is used ONLY on the launcher button, so
+   the channel is recognisable at a glance.
+   ============================================================ */
+@keyframes waRing{
+  0%{transform:scale(1);opacity:.55}
+  70%{transform:scale(1.55);opacity:0}
+  100%{transform:scale(1.55);opacity:0}
+}
+@keyframes waPanelIn{
+  from{opacity:0;transform:translateY(14px) scale(.96)}
+  to{opacity:1;transform:none}
+}
+
+.wa{position:fixed;right:24px;bottom:24px;z-index:60}
+
+/* ---- Launcher ---- */
+.wa__fab{
+  position:relative;display:grid;place-items:center;
+  width:60px;height:60px;border-radius:50%;border:0;padding:0;
+  background:#1FA855;color:#fff;cursor:pointer;
+  box-shadow:0 10px 28px rgba(4,33,26,.32);
+  transition:transform .2s ease,box-shadow .2s ease,background-color .2s ease;
+}
+.wa__fab:hover{background:#17914A;transform:translateY(-3px) scale(1.04);box-shadow:0 16px 36px rgba(4,33,26,.4)}
+.wa__fab:active{transform:translateY(-1px) scale(1)}
+/* Expanding ring — draws the eye without moving layout. */
+.wa__fab::before{
+  content:"";position:absolute;inset:0;border-radius:50%;
+  border:2px solid #1FA855;animation:waRing 2.6s ease-out infinite;pointer-events:none;
+}
+.wa__fab[aria-expanded="true"]::before{animation:none}
+.wa__fab .wa__close{display:none}
+.wa__fab[aria-expanded="true"] .wa__open{display:none}
+.wa__fab[aria-expanded="true"] .wa__close{display:block}
+
+/* Unread-style nudge, purely decorative. */
+.wa__badge{
+  position:absolute;top:-2px;right:-2px;
+  min-width:20px;height:20px;border-radius:10px;
+  background:var(--green-bright);color:#04231C;border:2px solid #fff;
+  font-family:var(--font-mono);font-size:.68rem;font-weight:700;line-height:16px;
+}
+.wa__fab[aria-expanded="true"] .wa__badge{display:none}
+
+/* ---- Panel ---- */
+.wa__panel{
+  position:absolute;right:0;bottom:76px;
+  width:min(360px,calc(100vw - 32px));
+  border-radius:16px;overflow:hidden;
+  border:1px solid var(--deep-line);
+  background:linear-gradient(180deg,var(--deep-2),var(--deep));
+  box-shadow:var(--shadow-lg);
+  animation:waPanelIn .26s cubic-bezier(.2,.8,.3,1);
+  transform-origin:bottom right;
+  /* Never grow past the viewport on a short window or a small phone. */
+  max-height:calc(100vh - 108px);display:flex;flex-direction:column;
+}
+.wa__head{flex:none}
+.wa__body{overflow-y:auto}
+.wa__head{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:16px 16px 15px;border-bottom:1px solid var(--deep-line);
+  background:rgba(52,211,153,.07);
+}
+.wa__avatar{
+  display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:11px;
+  background:linear-gradient(140deg,var(--green),#0EA271 60%,var(--cyan-dim));color:#fff;
+}
+.wa__head h2{margin:0;font-size:1rem;color:#fff;letter-spacing:-.01em}
+.wa__status{
+  display:flex;align-items:center;gap:7px;margin:3px 0 0;
+  font-family:var(--font-mono);font-size:.68rem;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--green-bright);
+}
+.wa__body{padding:16px;overscroll-behavior:contain}
+.wa__bubble{
+  margin:0 0 14px;padding:12px 14px;border-radius:4px 14px 14px 14px;
+  background:rgba(52,211,153,.10);border:1px solid var(--deep-line);
+  color:var(--on-deep);font-size:.9rem;line-height:1.6;
+}
+.wa__label{
+  display:block;margin:0 0 9px;
+  font-family:var(--font-mono);font-size:.66rem;font-weight:600;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--on-deep-dim);
+}
+.wa__chips{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.wa__chip{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:11px 14px;border-radius:10px;
+  border:1px solid var(--deep-line);background:rgba(255,255,255,.03);
+  color:var(--on-deep);text-decoration:none;font-size:.885rem;font-weight:500;
+  transition:background-color .16s,border-color .16s,transform .16s,color .16s;
+}
+.wa__chip:hover{
+  background:rgba(52,211,153,.13);border-color:var(--green-bright);
+  color:#fff;transform:translateX(3px);
+}
+.wa__chip svg{flex:none;color:var(--green-bright);opacity:.7;transition:opacity .16s}
+.wa__chip:hover svg{opacity:1}
+.wa__cta{width:100%;background:#1FA855;color:#fff;border-color:#1FA855}
+.wa__cta:hover{background:#17914A;border-color:#17914A;color:#fff}
+/* Outside .wa__body on purpose: the "not a bank channel" line must stay
+   visible even when the suggestions scroll on a short screen. */
+.wa__foot{
+  flex:none;margin:0;padding:12px 16px 14px;
+  border-top:1px solid var(--deep-line);background:rgba(52,211,153,.05);
+  font-size:.72rem;line-height:1.55;color:var(--on-deep-dim);text-align:center;
+}
+.wa__foot strong{color:var(--on-deep)}
+
+/* ============================================================
    RESPONSIVE
    ============================================================ */
 @media (max-width:960px){
@@ -614,6 +728,8 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
   .radio{flex:1 1 calc(50% - 10px)}
   .faq__btn{padding:18px 16px}
   .faq__panel{padding:0 16px 20px 16px}
+  .wa{right:16px;bottom:16px}
+  .wa__panel{bottom:72px}
 }
 
 @media (prefers-reduced-motion:reduce){
@@ -625,6 +741,7 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
   }
   .reveal{opacity:1;transform:none}
   .term__body > span{opacity:1}
+  .wa__fab::before{display:none}
 }
 </style>
 </head>
@@ -1160,6 +1277,72 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
   </div>
 </footer>
 
+<!-- ============================================================
+     SECTION 4 — FLOATING WHATSAPP WIDGET
+
+     The suggestion chips and the CTA are plain <a href> links, so the
+     widget still works with JavaScript disabled — the script only adds
+     the open/close behaviour around them. Every href carries the same
+     number; change one and you must change them all.
+     ============================================================ -->
+<div class="wa" id="waWidget">
+
+  <div class="wa__panel" id="waPanel" role="dialog" aria-modal="false" aria-labelledby="waTitle" hidden>
+    <div class="wa__head">
+      <span class="wa__avatar" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6.5v5c0 4.7 3.2 8.6 8 9.5 4.8-.9 8-4.8 8-9.5v-5z"/><path d="m9 12 2 2 4-4"/></svg>
+      </span>
+      <div>
+        <h2 id="waTitle">Chat with us</h2>
+        <p class="wa__status"><span class="dot" aria-hidden="true"></span>Usually replies in minutes</p>
+      </div>
+    </div>
+
+    <div class="wa__body">
+      <p class="wa__bubble">Hi there. Pick a question below and we&rsquo;ll open WhatsApp with it ready to send &mdash; or start your own message.</p>
+
+      <span class="wa__label" id="waSuggestLabel">Suggested questions</span>
+      <div class="wa__chips" role="group" aria-labelledby="waSuggestLabel">
+        <a class="wa__chip" href="https://wa.me/6596983731?text=Hi%21%20How%20do%20I%20reset%20my%20network%20password%3F" target="_blank" rel="noopener noreferrer">
+          <span>Reset my network password</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+        </a>
+        <a class="wa__chip" href="https://wa.me/6596983731?text=Hi%21%20I%20need%20help%20submitting%20a%20support%20ticket." target="_blank" rel="noopener noreferrer">
+          <span>Help me submit a ticket</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+        </a>
+        <a class="wa__chip" href="https://wa.me/6596983731?text=Hi%21%20What%20are%20the%20SLA%20response%20times%20for%20each%20priority%3F" target="_blank" rel="noopener noreferrer">
+          <span>What are the SLA response times?</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+        </a>
+        <a class="wa__chip" href="https://wa.me/6596983731?text=Hi%21%20I%20received%20a%20suspicious%20email%20%E2%80%94%20what%20should%20I%20do%3F" target="_blank" rel="noopener noreferrer">
+          <span>I got a suspicious email</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+        </a>
+        <a class="wa__chip" href="https://wa.me/6596983731?text=Hi%21%20I%27d%20like%20to%20ask%20about%20this%20IT%20Service%20Desk%20training%20demo." target="_blank" rel="noopener noreferrer">
+          <span>Ask about this training demo</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+        </a>
+      </div>
+
+      <a class="btn wa__cta" href="https://wa.me/6596983731?text=Hi%21%20I%20have%20a%20question%20about%20the%20IT%20Service%20Desk." target="_blank" rel="noopener noreferrer">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.23 8.25-8.23a8.23 8.23 0 0 1 0 16.47zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.13-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.5.11-.11.25-.29.37-.43.13-.15.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.47c-.17 0-.43.06-.66.31-.23.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.47-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.14-1.18-.06-.11-.22-.17-.47-.29z"/></svg>
+        Start a WhatsApp chat
+      </a>
+    </div>
+
+    <p class="wa__foot"><strong>Training demo.</strong> This opens a chat with the course trainer on +65 9698 3731 &mdash; it is not a bank support channel.</p>
+  </div>
+
+  <button class="wa__fab" id="waToggle" type="button" aria-expanded="false" aria-controls="waPanel"
+          aria-label="Open the WhatsApp chat menu">
+    <svg class="wa__open" width="30" height="30" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.23 8.25-8.23a8.23 8.23 0 0 1 0 16.47zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.13-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.5.11-.11.25-.29.37-.43.13-.15.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.47c-.17 0-.43.06-.66.31-.23.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.47-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.14-1.18-.06-.11-.22-.17-.47-.29z"/></svg>
+    <svg class="wa__close" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    <span class="wa__badge" aria-hidden="true">1</span>
+  </button>
+</div>
+
+
 <script>
 (function () {
   'use strict';
@@ -1591,6 +1774,58 @@ input[type="file"].visually-hidden:focus-visible + .file-btn{outline:3px solid v
     });
 
     faqEmpty.hidden = visible !== 0;
+  });
+
+  /* ============================================================
+     SECTION 4 — FLOATING WHATSAPP WIDGET
+
+     The chips and CTA are real links in the markup and work without any
+     of this; the script only adds open/close, focus handling and the
+     dismiss behaviours. Nothing here builds a URL or touches the network.
+     ============================================================ */
+  var waWidget = document.getElementById('waWidget');
+  var waToggle = document.getElementById('waToggle');
+  var waPanel  = document.getElementById('waPanel');
+
+  function setWaOpen(open) {
+    waToggle.setAttribute('aria-expanded', String(open));
+    waToggle.setAttribute('aria-label', open ? 'Close the WhatsApp chat menu'
+                                             : 'Open the WhatsApp chat menu');
+    waPanel.hidden = !open;
+    if (open) {
+      // Send focus to the first suggestion so the panel is usable from the keyboard.
+      var first = waPanel.querySelector('.wa__chip');
+      if (first) first.focus();
+    }
+  }
+
+  waToggle.addEventListener('click', function () {
+    setWaOpen(waToggle.getAttribute('aria-expanded') !== 'true');
+  });
+
+  // Choosing a suggestion hands off to WhatsApp — leave the panel closed behind it.
+  waPanel.addEventListener('click', function (e) {
+    if (e.target.closest('a')) setWaOpen(false);
+  });
+
+  // Escape closes and returns focus to the launcher.
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && waToggle.getAttribute('aria-expanded') === 'true') {
+      setWaOpen(false);
+      waToggle.focus();
+    }
+  });
+
+  // A click or a tab-out anywhere else dismisses the panel.
+  document.addEventListener('click', function (e) {
+    if (!waWidget.contains(e.target) && waToggle.getAttribute('aria-expanded') === 'true') {
+      setWaOpen(false);
+    }
+  });
+  document.addEventListener('focusin', function (e) {
+    if (!waWidget.contains(e.target) && waToggle.getAttribute('aria-expanded') === 'true') {
+      setWaOpen(false);
+    }
   });
 
   /* ============================================================
